@@ -1,6 +1,7 @@
 # ObjectFindTool
 qt widget's object name find tool
 
+![image](https://github.com/daonvshu/ObjectFindTool/blob/main/screenshot/p0.gif?raw=true)
 ## How to use
 relace your application to `ObjectFinderApplication`
 ```cpp
