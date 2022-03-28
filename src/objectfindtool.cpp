@@ -140,6 +140,9 @@ bool ObjectFinderApplication::notify(QObject* receiver, QEvent* e) {
             auto curWidget = qApp->activeWindow();
             if (curWidget != nullptr && curWidget->objectName() != maskWidget->objectName()) {
                 maskWidget->setGeometry(curWidget->geometry());
+                if (curWidget->windowFlags().testFlag(Qt::WindowStaysOnTopHint)) {
+                    maskWidget->raise();
+                }
             }
         }
     }
