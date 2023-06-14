@@ -41,6 +41,11 @@ void ObjectFinderMaskWidget::paintEvent(QPaintEvent* event) {
         if (name.isEmpty()) {
             name = "<empty>";
         }
+
+        name += QString("(tl:%1,%2 size:%3x%4)")
+                .arg(widgetTopLeft.x()).arg(widgetTopLeft.y())
+                .arg(tagRect.width()).arg(tagRect.height());
+                
         if (QDateTime::currentMSecsSinceEpoch() - lastCopiedTime < 3000 && lastCopiedTag == targetWidget) {
             name += " [copied!]";
         }
