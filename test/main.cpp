@@ -16,5 +16,8 @@ int main(int argc, char* argv[]) {
     MyWidget w;
     w.show();
 
+    MyWidget2 w2;
+    w2.show();
+
     return a.exec();
 }

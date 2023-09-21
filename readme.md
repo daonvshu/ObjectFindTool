@@ -24,5 +24,6 @@ int main(int argc, char* argv[]) {
     return a.exec();
 }
 ```
-- press key `F2(default)` to display current focus widget's object name
-- press `Ctrl+C` to copy current focus widget's object name
+- press key `F2(default)` to display current focus widget's object name and geometry.
+- press `Ctrl+C` to copy current focus widget's object name.
+- press and hold the key `Alt` to show the relative position to another widget.

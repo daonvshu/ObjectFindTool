@@ -5,7 +5,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_PREFIX_PATH F:/Qt/5.15.1/msvc2019_64)
+if (WIN32)
+    #编译使用utf8文件
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif()
 
 find_package(Qt5 COMPONENTS
         Core
@@ -17,8 +21,6 @@ add_executable(${PROJECT_NAME}-test WIN32
         test/main.cpp
 
         test/widget.h
-        test/widget.cpp
-        test/widget.ui  #copied from QtLogFilter
 
         src/objectfindtool.h
         src/objectfindtool.cpp
