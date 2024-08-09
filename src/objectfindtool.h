@@ -14,6 +14,7 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 
 private:
+    QWidget* activeWindow; //当前激活窗口
     QWidget* targetWidget; //当前焦点控件
     QWidget* compareTargetWidget; //用于位置比较的控件
     QColor displayColor; //提示信息显示颜色
@@ -32,7 +33,7 @@ private:
 
     void drawDistanceLine(QPainter& painter, const QLine& line, Qt::Orientation orientation);
 
-    static QWidget* topParentWidget(QWidget* target);
+    bool isActiveWindowChild(QWidget* target);
 
     void objectNameCopyToClipboard();
 

@@ -9,11 +9,12 @@
 #include <qdatetime.h>
 
 ObjectFinderMaskWidget::ObjectFinderMaskWidget(QWidget* parent)
-        : QWidget(parent)
-        , targetWidget(nullptr)
-        , compareTargetWidget(nullptr)
-        , lastCopiedTime(0)
-        , lastCopiedTag(nullptr)
+    : QWidget(parent)
+    , activeWindow(nullptr)
+    , targetWidget(nullptr)
+    , compareTargetWidget(nullptr)
+    , lastCopiedTime(0)
+    , lastCopiedTag(nullptr)
 {
     //Tool类型 + 无边框 + 透明 + 置顶显示 + 鼠标事件穿透
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -29,35 +30,30 @@ ObjectFinderMaskWidget::ObjectFinderMaskWidget(QWidget* parent)
 void ObjectFinderMaskWidget::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
 
-    if (targetWidget != nullptr) {
-
-        auto parentWidget = topParentWidget(targetWidget);
+    if (targetWidget != nullptr && isActiveWindowChild(targetWidget)) {
 
         painter.setPen(QPen(displayColor, 1, Qt::DotLine)); //用虚线绘制焦点控件位置
 
         //绘制目标控件相对顶级父控件位置
-        auto widgetTopLeft = targetWidget->mapTo(parentWidget, QPoint(0, 0));
+        auto widgetTopLeft = targetWidget->mapTo(activeWindow, QPoint(0, 0));
         auto tagRect = targetWidget->rect();
         tagRect.moveTopLeft(widgetTopLeft);
         painter.drawRect(tagRect);
 
         //绘制顶级父控件在当前屏幕上的位置
-        auto parentRect = parentWidget->rect();
+        auto parentRect = activeWindow->rect();
         painter.drawRect(parentRect.adjusted(0, 0, -1, -1));
 
-        if (compareTargetWidget != nullptr) {
-            auto compareParent = topParentWidget(compareTargetWidget);
-            if (parentWidget == compareParent) {
-                auto compareRect = compareTargetWidget->rect();
-                compareRect.moveTopLeft(compareTargetWidget->mapTo(compareParent, QPoint(0, 0)));
-                painter.drawRect(compareRect);
+        if (compareTargetWidget != nullptr && isActiveWindowChild(compareTargetWidget)) {
+            auto compareRect = compareTargetWidget->rect();
+            compareRect.moveTopLeft(compareTargetWidget->mapTo(activeWindow, QPoint(0, 0)));
+            painter.drawRect(compareRect);
 
-                if (compareTargetWidget != targetWidget) { //位置比较
-                    if (compareRect.contains(tagRect) || tagRect.contains(compareRect)) { //位置相交
-                        drawInnerRectDistance(painter, compareRect, tagRect);
-                    } else {
-                        drawRectDistance(painter, compareRect, tagRect);
-                    }
+            if (compareTargetWidget != targetWidget) { //位置比较
+                if (compareRect.contains(tagRect) || tagRect.contains(compareRect)) { //位置相交
+                    drawInnerRectDistance(painter, compareRect, tagRect);
+                } else {
+                    drawRectDistance(painter, compareRect, tagRect);
                 }
             }
         }
@@ -364,18 +360,21 @@ void ObjectFinderMaskWidget::drawControlInfo(QPainter& painter, const QRect &tag
 }
 
 /**
- * 查找焦点控件顶级窗口对象，可能是主窗口，也可能是对话框
+ * 检查是否是当前激活窗口的子控件
  * @return 顶级父控件对象指针
  */
-QWidget* ObjectFinderMaskWidget::topParentWidget(QWidget* target) {
-    if (target == nullptr) {
-        return nullptr;
+bool ObjectFinderMaskWidget::isActiveWindowChild(QWidget* target) {
+    if (target == nullptr || activeWindow == nullptr) {
+        return false;
     }
     QWidget* parent = target;
     while (parent->parentWidget() != nullptr) {
         parent = parent->parentWidget();
+        if (parent == activeWindow) {
+            return true;
+        }
     }
-    return parent;
+    return false;
 }
 
 /**
@@ -409,9 +408,9 @@ void ObjectFinderMaskWidget::pinToCompare(bool toPin) {
 }
 
 ObjectFinderApplication::ObjectFinderApplication(int& argc, char** argv, const Qt::Key& shortcut, const QColor& color)
-        : QApplication(argc, argv)
-        , findObjectMode(false)
-        , shortcut(shortcut)
+    : QApplication(argc, argv)
+    , findObjectMode(false)
+    , shortcut(shortcut)
 {
     maskWidget = new ObjectFinderMaskWidget;
     maskWidget->setObjectName("_objectFindTool_MaskWidget");
@@ -476,6 +475,7 @@ void ObjectFinderApplication::switchFindMode() {
 
     if (findObjectMode) {
         auto curWidget = activeWindow();
+        maskWidget->activeWindow = curWidget;
         maskWidget->setGeometry(curWidget->geometry()); //设置标记控件到当前主窗口大小
     }
     maskWidget->targetWidget = nullptr; //清除焦点控件
@@ -487,8 +487,10 @@ void ObjectFinderApplication::switchFindMode() {
  */
 void ObjectFinderApplication::setFocusWidget() {
     auto target = widgetAt(QCursor::pos());
-    maskWidget->targetWidget = target;
-    maskWidget->update();
+    if (maskWidget->isActiveWindowChild(target)) {
+        maskWidget->targetWidget = target;
+        maskWidget->update();
+    }
 }
 
 /**
@@ -506,7 +508,7 @@ void ObjectFinderApplication::resizeMaskWidget() {
  * @param receiver
  */
 void ObjectFinderApplication::testActiveWindowClosed(QObject *receiver) {
-    if (receiver == maskWidget->topParentWidget(maskWidget->targetWidget)) {
+    if (receiver == maskWidget->activeWindow) {
         maskWidget->targetWidget = nullptr;
         maskWidget->update();
     }
@@ -518,6 +520,7 @@ void ObjectFinderApplication::testActiveWindowClosed(QObject *receiver) {
 void ObjectFinderApplication::testActiveWindowChanged() {
     auto curWidget = activeWindow();
     if (curWidget != nullptr && curWidget->objectName() != maskWidget->objectName()) {
+        maskWidget->activeWindow = curWidget;
         maskWidget->setGeometry(curWidget->geometry());
         if (curWidget->windowFlags().testFlag(Qt::WindowStaysOnTopHint)) {
             maskWidget->raise(); //提示窗口具有置顶属性，再次拉起提示控件到顶层
