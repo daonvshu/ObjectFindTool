@@ -2,6 +2,7 @@
 
 #include <qwidget.h>
 #include <qapplication.h>
+#include <QPointer>
 
 /**
  * 信息标记控件，用于绘制焦点控件信息的控件
@@ -14,26 +15,26 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 
 private:
-    QWidget* activeWindow; //当前激活窗口
-    QWidget* targetWidget; //当前焦点控件
-    QWidget* compareTargetWidget; //用于位置比较的控件
+    QPointer<QWidget> activeWindow; //当前激活窗口
+    QPointer<QWidget> targetWidget; //当前焦点控件
+    QPointer<QWidget> compareTargetWidget; //用于位置比较的控件
     QColor displayColor; //提示信息显示颜色
 
     qint64 lastCopiedTime; //最后进行objectName复制的时间戳
-    void* lastCopiedTag; //最后进行objectName复制的控件对象
+    QPointer<QWidget> lastCopiedTag; //最后进行objectName复制的控件对象
 
     friend class ObjectFinderApplication;
 
 private:
-    void drawInnerRectDistance(QPainter& painter, const QRect& r1, const QRect& r2);
+    void drawInnerRectDistance(QPainter& painter, const QRect& r1, const QRect& r2) const;
 
-    void drawRectDistance(QPainter& painter, const QRect& compare, const QRect& target);
+    void drawRectDistance(QPainter& painter, const QRect& compare, const QRect& target) const;
 
-    void drawControlInfo(QPainter& painter, const QRect& tagRect);
+    void drawControlInfo(QPainter& painter, const QRect& tagRect) const;
 
-    void drawDistanceLine(QPainter& painter, const QLine& line, Qt::Orientation orientation);
+    void drawDistanceLine(QPainter& painter, const QLine& line, Qt::Orientation orientation) const;
 
-    bool isActiveWindowChild(QWidget* target);
+    bool isActiveWindowChild(const QPointer<QWidget>& target) const;
 
     void objectNameCopyToClipboard();
 
@@ -55,7 +56,7 @@ private:
     Q_DISABLE_COPY(ObjectFinderApplication)
 
 private:
-    ObjectFinderMaskWidget* maskWidget; //用于提示信息绘制
+    QPointer<ObjectFinderMaskWidget> maskWidget; //用于提示信息绘制
 
     bool findObjectMode; //是否开启了查找模式
 
@@ -63,8 +64,8 @@ private:
 
 private:
     void switchFindMode();
-    void setFocusWidget();
-    void resizeMaskWidget();
-    void testActiveWindowClosed(QObject* receiver);
-    void testActiveWindowChanged();
+    void setFocusWidget() const;
+    void resizeMaskWidget() const;
+    void testActiveWindowClosed(QObject* receiver) const;
+    void testActiveWindowChanged() const;
 };

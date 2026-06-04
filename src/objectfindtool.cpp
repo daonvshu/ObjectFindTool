@@ -30,7 +30,7 @@ ObjectFinderMaskWidget::ObjectFinderMaskWidget(QWidget* parent)
 void ObjectFinderMaskWidget::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
 
-    if (targetWidget != nullptr && isActiveWindowChild(targetWidget)) {
+    if (!targetWidget.isNull() && isActiveWindowChild(targetWidget)) {
 
         painter.setPen(QPen(displayColor, 1, Qt::DotLine)); //用虚线绘制焦点控件位置
 
@@ -44,7 +44,7 @@ void ObjectFinderMaskWidget::paintEvent(QPaintEvent* event) {
         auto parentRect = activeWindow->rect();
         painter.drawRect(parentRect.adjusted(0, 0, -1, -1));
 
-        if (compareTargetWidget != nullptr && isActiveWindowChild(compareTargetWidget)) {
+        if (!compareTargetWidget.isNull() && isActiveWindowChild(compareTargetWidget)) {
             auto compareRect = compareTargetWidget->rect();
             compareRect.moveTopLeft(compareTargetWidget->mapTo(activeWindow, QPoint(0, 0)));
             painter.drawRect(compareRect);
@@ -58,7 +58,7 @@ void ObjectFinderMaskWidget::paintEvent(QPaintEvent* event) {
             }
         }
 
-        if (compareTargetWidget == nullptr) { //比较模式下不绘制提示信息
+        if (compareTargetWidget.isNull()) { //比较模式下不绘制提示信息
             drawControlInfo(painter, tagRect);
         }
     }
@@ -70,7 +70,7 @@ void ObjectFinderMaskWidget::paintEvent(QPaintEvent* event) {
  * @param r1
  * @param r2
  */
-void ObjectFinderMaskWidget::drawInnerRectDistance(QPainter &painter, const QRect &r1, const QRect &r2) {
+void ObjectFinderMaskWidget::drawInnerRectDistance(QPainter &painter, const QRect &r1, const QRect &r2) const {
 
     QRect inner, outer;
     if (r1.contains(r2)) {
@@ -102,7 +102,7 @@ void ObjectFinderMaskWidget::drawInnerRectDistance(QPainter &painter, const QRec
  * @param compare
  * @param target
  */
-void ObjectFinderMaskWidget::drawRectDistance(QPainter &painter, const QRect &compare, const QRect &target) {
+void ObjectFinderMaskWidget::drawRectDistance(QPainter &painter, const QRect &compare, const QRect &target) const {
 
     //测试x轴方向
     auto baseX1 = compare.left();
@@ -262,7 +262,7 @@ void ObjectFinderMaskWidget::drawRectDistance(QPainter &painter, const QRect &co
  * @param line
  * @param orientation 垂直线还是水平线
  */
-void ObjectFinderMaskWidget::drawDistanceLine(QPainter& painter, const QLine &line, Qt::Orientation orientation) {
+void ObjectFinderMaskWidget::drawDistanceLine(QPainter& painter, const QLine &line, Qt::Orientation orientation) const {
     //绘制线
     painter.drawLine(line);
     //绘制端点
@@ -325,7 +325,7 @@ void ObjectFinderMaskWidget::drawDistanceLine(QPainter& painter, const QLine &li
  * @param painter
  * @param tagRect 控件位置
  */
-void ObjectFinderMaskWidget::drawControlInfo(QPainter& painter, const QRect &tagRect) {
+void ObjectFinderMaskWidget::drawControlInfo(QPainter& painter, const QRect &tagRect) const {
     //绘制对象名和大小信息
     auto name = targetWidget->objectName();
     if (name.isEmpty()) {
@@ -363,11 +363,11 @@ void ObjectFinderMaskWidget::drawControlInfo(QPainter& painter, const QRect &tag
  * 检查是否是当前激活窗口的子控件
  * @return 顶级父控件对象指针
  */
-bool ObjectFinderMaskWidget::isActiveWindowChild(QWidget* target) {
-    if (target == nullptr || activeWindow == nullptr) {
+bool ObjectFinderMaskWidget::isActiveWindowChild(const QPointer<QWidget>& target) const {
+    if (target.isNull() || activeWindow.isNull()) {
         return false;
     }
-    QWidget* parent = target;
+    QWidget* parent = target.data();
     while (parent->parentWidget() != nullptr) {
         parent = parent->parentWidget();
         if (parent == activeWindow) {
@@ -381,7 +381,7 @@ bool ObjectFinderMaskWidget::isActiveWindowChild(QWidget* target) {
  * 复制焦点控件对象名到粘贴板，并刷新提示信息
  */
 void ObjectFinderMaskWidget::objectNameCopyToClipboard() {
-    if (targetWidget == nullptr) {
+    if (targetWidget.isNull()) {
         return;
     }
     qApp->clipboard()->setText(targetWidget->objectName());
@@ -398,8 +398,8 @@ void ObjectFinderMaskWidget::pinToCompare(bool toPin) {
         compareTargetWidget = nullptr;
         update();
     } else {
-        if (targetWidget != nullptr) { //前提是当前位置有焦点控件
-            if (compareTargetWidget == nullptr) { //只管第一次标记
+        if (!targetWidget.isNull()) { //前提是当前位置有焦点控件
+            if (compareTargetWidget.isNull()) { //只管第一次标记
                 compareTargetWidget = targetWidget;
                 update();
             }
@@ -485,8 +485,8 @@ void ObjectFinderApplication::switchFindMode() {
 /**
  * 鼠标移动时，切换焦点控件到鼠标当前位置控件
  */
-void ObjectFinderApplication::setFocusWidget() {
-    auto target = widgetAt(QCursor::pos());
+void ObjectFinderApplication::setFocusWidget() const {
+    QPointer<QWidget> target = widgetAt(QCursor::pos());
     if (maskWidget->isActiveWindowChild(target)) {
         maskWidget->targetWidget = target;
         maskWidget->update();
@@ -496,7 +496,7 @@ void ObjectFinderApplication::setFocusWidget() {
 /**
  * 窗口发生移动和大小变化，重新设置提示控件大小
  */
-void ObjectFinderApplication::resizeMaskWidget() {
+void ObjectFinderApplication::resizeMaskWidget() const {
     auto curWidget = activeWindow();
     if (curWidget != nullptr) {
         maskWidget->setGeometry(curWidget->geometry());
@@ -507,7 +507,7 @@ void ObjectFinderApplication::resizeMaskWidget() {
  * 如果当前窗口关闭，提示控件清除标记
  * @param receiver
  */
-void ObjectFinderApplication::testActiveWindowClosed(QObject *receiver) {
+void ObjectFinderApplication::testActiveWindowClosed(QObject *receiver) const {
     if (receiver == maskWidget->activeWindow) {
         maskWidget->targetWidget = nullptr;
         maskWidget->update();
@@ -517,7 +517,7 @@ void ObjectFinderApplication::testActiveWindowClosed(QObject *receiver) {
 /**
  * 激活窗口发生变化，重置提示控件位置
  */
-void ObjectFinderApplication::testActiveWindowChanged() {
+void ObjectFinderApplication::testActiveWindowChanged() const {
     auto curWidget = activeWindow();
     if (curWidget != nullptr && curWidget->objectName() != maskWidget->objectName()) {
         maskWidget->activeWindow = curWidget;
