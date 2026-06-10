@@ -3,7 +3,7 @@ qt widget's object name find tool
 
 ![image](https://github.com/daonvshu/ObjectFindTool/blob/main/screenshot/p0.gif?raw=true)
 ## How to use
-relace your application to `ObjectFinderApplication`
+replace your application with `ObjectFinderApplication`
 ```cpp
 #ifdef QT_DEBUG
 #include "src/objectfindtool.h"
@@ -27,3 +27,4 @@ int main(int argc, char* argv[]) {
 - press key `F2(default)` to display current focus widget's object name and geometry.
 - press `Ctrl+C` to copy current focus widget's object name.
 - press and hold the key `Alt` to show the relative position to another widget.
+- press `Shift` to switch the current target to its parent widget.
