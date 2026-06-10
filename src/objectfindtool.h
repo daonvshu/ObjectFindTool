@@ -2,7 +2,7 @@
 
 #include <qwidget.h>
 #include <qapplication.h>
-#include <QPointer>
+#include <qpointer.h>
 
 /**
  * 信息标记控件，用于绘制焦点控件信息的控件
@@ -39,6 +39,8 @@ private:
     void objectNameCopyToClipboard();
 
     void pinToCompare(bool toPin);
+
+    void switchToParentWidget();
 };
 
 /**

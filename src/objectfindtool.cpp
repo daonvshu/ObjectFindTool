@@ -345,7 +345,9 @@ void ObjectFinderMaskWidget::drawControlInfo(QPainter& painter, const QRect &tag
 
     //测量绘制提示信息需要的大小，如果超出绘制边界，将其移动到绘制区域内
     auto nameRect = fontMetrics().boundingRect(name).adjusted(-2, -2, 2, 2);
-    if (widgetTopLeft.y() - nameRect.height() > 0) { //检测上方是否有足够空间绘制
+    if (targetWidget == activeWindow) {
+        nameRect.moveTopLeft(widgetTopLeft + QPoint(2, 2));
+    } else if (widgetTopLeft.y() - nameRect.height() > 0) { //检测上方是否有足够空间绘制
         nameRect.moveBottomLeft(widgetTopLeft);
     } else { //上方不够移动到下方绘制
         nameRect.moveBottomLeft(
@@ -366,6 +368,9 @@ void ObjectFinderMaskWidget::drawControlInfo(QPainter& painter, const QRect &tag
 bool ObjectFinderMaskWidget::isActiveWindowChild(const QPointer<QWidget>& target) const {
     if (target.isNull() || activeWindow.isNull()) {
         return false;
+    }
+    if (target == activeWindow) {
+        return true;
     }
     QWidget* parent = target.data();
     while (parent->parentWidget() != nullptr) {
@@ -407,6 +412,35 @@ void ObjectFinderMaskWidget::pinToCompare(bool toPin) {
     }
 }
 
+/**
+ * 切换当前焦点控件到父控件
+ */
+void ObjectFinderMaskWidget::switchToParentWidget() {
+    if (targetWidget.isNull()) {
+        return;
+    }
+    QPointer<QWidget> parent = targetWidget->parentWidget();
+    if (parent == targetWidget) {
+        parent = nullptr;
+    }
+    QObject* objectParent = targetWidget->parent();
+    while (parent.isNull() && objectParent != nullptr) {
+        auto parentWidget = qobject_cast<QWidget*>(objectParent);
+        if (parentWidget != targetWidget) {
+            parent = parentWidget;
+        }
+        objectParent = objectParent->parent();
+    }
+    if (parent.isNull() && targetWidget != activeWindow && targetWidget->window() == activeWindow) {
+        parent = activeWindow;
+    }
+    if (parent.isNull() || !isActiveWindowChild(parent)) {
+        return;
+    }
+    targetWidget = parent;
+    update();
+}
+
 ObjectFinderApplication::ObjectFinderApplication(int& argc, char** argv, const Qt::Key& shortcut, const QColor& color)
     : QApplication(argc, argv)
     , findObjectMode(false)
@@ -440,6 +474,11 @@ bool ObjectFinderApplication::notify(QObject* receiver, QEvent* e) {
 
             if (keyEvent->key() == Qt::Key_Alt) {
                 maskWidget->pinToCompare(true);
+            }
+
+            if (keyEvent->key() == Qt::Key_Shift && !keyEvent->isAutoRepeat()) {
+                maskWidget->switchToParentWidget();
+                return true;
             }
         }
 
